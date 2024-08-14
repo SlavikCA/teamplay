@@ -7,7 +7,7 @@
 </head>
 <body>
     <h1 id="teamName">Team Name</h1>
-    <button id="readyButton" style="display:none;">READY</button>
+    <button id="readyButton" style="display:none; width:100%; font-size: large; background-color:orange; padding-top: 5%; padding-bottom: 5%;">READY</button>
     <div id="status">Waiting for the start...</div>
 
     <script>
@@ -27,16 +27,20 @@
             if (message.action === 'start') {
                 document.getElementById('status').textContent = 'Go!';
                 document.getElementById('readyButton').style.display = 'block';
+                document.getElementById('readyButton').style.backgroundColor = "orange";
+                document.getElementById('readyButton').innerText = "READY";
+                document.getElementById('readyButton').disabled = false;
             }
 
             if (message.action === 'ready') {
-                document.getElementById('status').textContent = message.data.team + ' is ready! Time: ' + message.data.timeTaken + 's';
+                document.getElementById('readyButton').innerText = message.data.timeTaken + 's';
             }
         };
 
         document.getElementById('readyButton').addEventListener('click', function() {
             ws.send(JSON.stringify({action: 'ready', team: teamName}));
-            document.getElementById('status').textContent = 'Ready signal sent!';
+            document.getElementById('readyButton').style.backgroundColor = "green";
+            document.getElementById('readyButton').disabled = true;
         });
     </script>
 </body>

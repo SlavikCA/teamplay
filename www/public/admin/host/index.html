@@ -3,25 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manager Dashboard</title>
+    <title>Dashboard</title>
     <style>
         .team-card {
             border: 1px solid #000;
             padding: 10px;
             margin: 10px;
+            background-color: white;
+            text-align: center;
+        }
+        h1 {
+            text-align: center;
         }
     </style>
 </head>
 <body>
-    <h1>Manager Dashboard</h1>
+    <h1>Dashboard</h1>
+    <button id="startButton" style="width: 100%;font-size: large;">START NEW QUESTION</button>
     <div id="teamContainer"></div>
-    <button id="startButton">START NEW QUESTION</button>
     <div id="log"></div>
 
     <script>
         const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
         const wsUrl = `${wsProtocol}//${location.host}/ws`;
         const ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => {
+            teamName = 'manager';
+            ws.send(JSON.stringify({ action: 'register', teamName }));
+        };
 
         ws.onmessage = function(event) {
             const message = JSON.parse(event.data);
@@ -30,20 +40,30 @@
                 const log = document.getElementById('log');
                 const entry = document.createElement('div');
                 entry.textContent = message.data.team + ' clicked READY at ' + ' (Time: ' + message.data.timeTaken + 's)';
-                log.appendChild(entry);
+                document.getElementById(`${message.data.team}-readyTime`).innerHTML = message.data.timeTaken + 's';
+                document.getElementById(`${message.data.team}-card`).style.backgroundColor = "green";
+                console.log(entry);
             }
 
             if (message.action === 'new_team') {
                 const teamContainer = document.getElementById('teamContainer');
                 const teamCard = document.createElement('div');
                 teamCard.className = 'team-card';
-                teamCard.innerHTML = `<h3>${message.teamName}</h3>`;
+                teamCard.id =`${message.teamName}-card`;
+                teamCard.innerHTML = `<h3>${message.teamName}</h3>  <p class="readyTime" id="${message.teamName}-readyTime">0:0</p>`;
                 teamContainer.appendChild(teamCard);
             }
         };
 
         document.getElementById('startButton').addEventListener('click', function() {
             ws.send(JSON.stringify({action: 'start'}));
+            Array.prototype.forEach.call(document.getElementsByClassName('team-card'), function(element) {
+                element.style.backgroundColor = "orange";
+            });
+            Array.prototype.forEach.call(document.getElementsByClassName('readyTime'), function(element) {
+                element.innerText = "0:0";
+            });
+
         });
     </script>
 </body>
