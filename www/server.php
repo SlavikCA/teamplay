@@ -36,6 +36,11 @@ class CompetitionServer implements MessageComponentInterface {
         $data = json_decode($msg);
 
         switch ($data->action) {
+            case 'register':
+                // Broadcast the new team's name to all clients
+                $this->broadcast(['action' => 'new_team', 'teamName' => $data->teamName]);
+                break;    
+
             case 'start':
                 $this->startTime = microtime(true);
                 $this->broadcast(['action' => 'start']);
