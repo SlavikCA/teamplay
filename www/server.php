@@ -8,29 +8,26 @@ use Ratchet\Http\HttpServer;
 use Ratchet\WebSocket\WsServer;
 use React\EventLoop\Factory;
 use React\Socket\Server as ReactSocket;
-use React\Socket\Server;
 
 class CompetitionServer implements MessageComponentInterface {
     protected $clients;
     protected $startTime;
+    protected $manager;
 
     public function __construct() {
         $this->clients = new \SplObjectStorage;
         $this->startTime = null;
     }
 
-    public function startKeepAlive() {
-        $loop = React\EventLoop\Factory::create();
-        $loop->addPeriodicTimer(30, function () {  //seconds
+    public function startKeepAlive($loop) {
+        $loop->addPeriodicTimer(30, function () {  // seconds
             foreach ($this->clients as $client) {
                 $client->send(json_encode(['type' => 'ping']));
             }
         });
-        $loop->run();
     }
 
     public function onOpen(ConnectionInterface $conn) {
-        // Store the new connection
         $this->clients->attach($conn);
         echo "New connection! ({$conn->resourceId})\n";
     }
@@ -42,6 +39,7 @@ class CompetitionServer implements MessageComponentInterface {
             case 'start':
                 $this->startTime = microtime(true);
                 $this->broadcast(['action' => 'start']);
+                $this->manager = $from;
                 break;
 
             case 'ready':
@@ -51,13 +49,13 @@ class CompetitionServer implements MessageComponentInterface {
                     'timestamp' => date('H:i:s'),
                     'timeTaken' => round($timeTaken, 3)
                 ];
-                $this->broadcast(['action' => 'ready', 'data' => $response]);
+                $from->         send(json_encode(['action' => 'ready', 'data' => $response]));
+                $this->manager->send(json_encode(['action' => 'ready', 'data' => $response]));                
                 break;
         }
     }
 
     public function onClose(ConnectionInterface $conn) {
-        // Remove the connection
         $this->clients->detach($conn);
         echo "Connection {$conn->resourceId} has disconnected\n";
     }
@@ -74,14 +72,19 @@ class CompetitionServer implements MessageComponentInterface {
     }
 }
 
-$server = IoServer::factory(
+$loop = Factory::create();
+
+$competitionServer = new CompetitionServer();
+
+$server = new IoServer(
     new HttpServer(
-        new WsServer(
-            new CompetitionServer()
-        )
+        new WsServer($competitionServer)
     ),
-    7000
+    new ReactSocket('0.0.0.0:7000', $loop), 
+    $loop
 );
+
+$competitionServer->startKeepAlive($loop);
 
 echo "WebSocket server running on ws://localhost:7000\n";
 $server->run();
