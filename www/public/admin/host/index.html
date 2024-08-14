@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manager Dashboard</title>
+</head>
+<body>
+    <h1>Manager Dashboard</h1>
+    <button id="startButton">START</button>
+    <div id="log"></div>
+
+    <script>
+        const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${wsProtocol}//${location.host}/ws`;
+        const ws = new WebSocket(wsUrl);
+
+        ws.onmessage = function(event) {
+            const message = JSON.parse(event.data);
+
+            if (message.action === 'ready') {
+                const log = document.getElementById('log');
+                const entry = document.createElement('div');
+                entry.textContent = message.data.team + ' clicked READY at ' + ' (Time: ' + message.data.timeTaken + 's)';
+                log.appendChild(entry);
+            }
+        };
+
+        document.getElementById('startButton').addEventListener('click', function() {
+            ws.send(JSON.stringify({action: 'start'}));
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Competition</title>
+</head>
+<body>
+    <h1 id="teamName">Team Name</h1>
+    <button id="readyButton" style="display:none;">READY</button>
+    <div id="status">Waiting for the start...</div>
+
+    <script>
+        const teamName = prompt("Enter your team name:");
+        document.getElementById('teamName').textContent = teamName;
+
+        const wsProtocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${wsProtocol}//${location.host}/ws`;
+        const ws = new WebSocket(wsUrl);
+
+        ws.onmessage = function(event) {
+            const message = JSON.parse(event.data);
+
+            if (message.action === 'start') {
+                document.getElementById('status').textContent = 'Go!';
+                document.getElementById('readyButton').style.display = 'block';
+            }
+
+            if (message.action === 'ready') {
+                document.getElementById('status').textContent = message.data.team + ' is ready! Time: ' + message.data.timeTaken + 's';
+            }
+        };
+
+        document.getElementById('readyButton').addEventListener('click', function() {
+            ws.send(JSON.stringify({action: 'ready', team: teamName}));
+            document.getElementById('status').textContent = 'Ready signal sent!';
+        });
+    </script>
+</body>
+</html>
